@@ -23,8 +23,8 @@ WEB_DIR="/usr/share/nginx/html/badips"
 #Create badips.txt if it doesn't exist
 [ ! -e $WEB_DIR/badips.txt ] && touch $WEB_DIR/badips.txt
 
-#Find bad IPs who failed 100 or more times and write to a file with their total amount to save for later investigation if needed
-grep -rP 'ASA-6-113005: AAA user authentication Rejected.*user IP = \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' syslog.txt | grep -oP '(?<=user IP = )\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'| awk '{print $1 "/32"}' | sort | uniq -c | awk '$1 > 100 {print $1 " " $2}' | sort -nr > /"${DIRECTORY}"/"${FILENAME}" || { echo "$DATE - Error: Failed to find bad ips and write file."; exit 1; }
+#Find bad IPs who failed 20 or more times and write to a file with their total amount to save for later investigation if needed
+grep -rP 'ASA-6-(113005|113015): AAA user authentication Rejected.*user IP = \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' syslog.txt | grep -oP '(?<=user IP = )\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'| awk '{print $1 "/32"}' | sort | uniq -c | awk '$1 > 20 {print $1 " " $2}' | sort -nr > /"${DIRECTORY}"/"${FILENAME}" || { echo "$DATE - Error: Failed to find bad ips and write file."; exit 1; }
 
 #Count the number of IPs in the file
 LINES=$(wc -l < $DIRECTORY/$FILENAME) || { echo "$DATE - Error: Failed to count lines"; exit 1; }
@@ -32,8 +32,8 @@ LINES=$(wc -l < $DIRECTORY/$FILENAME) || { echo "$DATE - Error: Failed to count 
 #Note for logging
 echo "$DATE - INFO: Wrote ${FILENAME} with ${LINES} bad IPs"
 
-# Find bad IPs who failed 100 or more times and write to temp file to be included in main badips.txt file
-grep -rP 'ASA-6-113005: AAA user authentication Rejected.*user IP = \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' syslog.txt | grep -oP '(?<=user IP = )\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'| awk '{print $1 "/32"}' | sort | uniq -c | awk '$1 > 100 {print $2}' | sort -nr > $WEB_DIR/badipstemp.txt || { echo "$DATE - Failed to write badipstemp.txt"; exit 1; }
+# Find bad IPs who failed 20 or more times and write to temp file to be included in main badips.txt file
+grep -rP 'ASA-6-(113005|113015): AAA user authentication Rejected.*user IP = \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}' syslog.txt | grep -oP '(?<=user IP = )\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'| awk '{print $1 "/32"}' | sort | uniq -c | awk '$1 > 20 {print $2}' | sort -nr > $WEB_DIR/badipstemp.txt || { echo "$DATE - Failed to write badipstemp.txt"; exit 1; }
 
 #Backup badips file incase something goes wrong
 cp "$WEB_DIR/badips.txt" "$WEB_DIR/badips.txt.bak" || { echo "$DATE - Error: Failed to backup badips.txt."; exit 1; }
